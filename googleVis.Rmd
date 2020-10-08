@@ -1,0 +1,314 @@
+---
+title: "googleVis"
+author: "Sanjeev Kumar, Ayushi Ambhore, Lee Corbin"
+date: "10/1/2020"
+output: 
+   html_document:
+    self_contained: false
+    toc: TRUE
+    theme: journal
+    toc_float: TRUE
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(googleVis)
+library(tidyverse)
+op <- options(gvis.plot.tag='chart')
+```
+
+```{r, message=FALSE,warning=FALSE}
+#install.packages("tidyverse")
+#install.packages("knitr")
+#nstall.packages("ggthemes")
+library(ggthemes)
+#install.packages('plotly')
+library(plotly)
+library(knitr)
+#library(googleVis)
+
+```
+
+### Package Overview
+The googleVis package provides an interface between R and the Google's Chart Tools. The package provides interfaces to but not limited to the following:
+
+- Geo Chart
+- Scatter Chart
+- Bar Chart
+- Histogram
+- Bubble Chart
+- Candlestick Chart
+
+It allows users to create web pages with interactive charts based on R data frames. While it uses Google's Chart Tools, the data remains local and is not uploaded to Google. The authors, Markus Gesmann, Diego de Castillo, Joe Cheng, and Ashley Baldry, created this package after the 2006 Ted Talk by Hans Rosling on social and economic developments in the world over the past 50 years where Rosling displayed and soon popularized the the idea and use of interactive charts. Google then purchased Rosling's initial software and integrated it into their own Google Charts API to make googleVis.
+
+These charts could be used to illustrate data in a manner that is better presentable and more aesthetically pleasing. For example, rather than listing our data points about the electoral college in a list format, one could use the Geo Chart feature of googleVis to represent the data in a cleaner, more digestible fashion. Additionally, candidates could use the Bubble Chart feature of googleVis to see pockets of Democrats and Republicans in swing states to identify which regions specifically they should work on. If that's not enough and the candidate wants to further pursue his odds of getting the votes, he could utilize the Candlestick Chart feature of googleVis to see the outliers of swing voters in each of the regions identified in the Bubble Chart to know exactly which voters he has the best probability of getting the vote. The possibilities are endless.
+
+____________________________________________________________________________________________________________________
+
+#### Background Information
+
+- Version: 0.6.6
+- Not dependent on any other packages but can import other packages to enhance the features
+     + httpuv
+     + knitr
+     + data.table
+     + Shiny to make animated maps
+
+______________________________________________________________________________________________________________
+### Examples of Usage
+
+
+#### Creating Bubble Charts{.tabset}
+1. Johnny wants to see his inventory and sales throughout the year
+
+##### Simple Bubble Chart
+* gvisBubbleChart is used to visualize a data set with 2 to 4 dimensions. The first two dimensions are visualized as coordinates, the 3rd as color and the 4th as size.
+* With the following code, we can get a basic bubble chart of his inventory based on sales
+     + idvar is the column name of data with the bubble
+     + xvar is the column name of a numerical vector in data to be plotted on the x-axis.
+     + yvar is the column name of a numerical vector in data to be plotted on the y-axis
+```{r results='asis', tidy=FALSE}
+inventory_chart <- gvisBubbleChart(Fruits, idvar="Fruit", 
+                          xvar="Sales", yvar="Expenses", 
+                          options = list(width = "automatic",
+                          height = "automatic"))
+plot(inventory_chart)
+```
+
+##### Bubble Chart Grouped By Color
+* colorvar is the column name of data that identifies bubbles in the same series
+     + this can help distinguish what year each data point is coming from
+```{r results='asis', tidy=FALSE}
+inventory_chart2 <- gvisBubbleChart(Fruits, idvar="Fruit", 
+                          xvar="Sales", yvar="Expenses", colorvar = "Year", 
+                          options = list(width = 750,
+                          height = "Automatic"))
+plot(inventory_chart2)
+```
+
+##### Bubble Chart with Different Sizes
+* sizevar changes the size of the bubble based on the values in a column
+     + this can help distinguish what fruit made the most profit
+```{r results='asis', tidy=FALSE, fig.height= 50, fig.width=50}
+inventory_chart3 <- gvisBubbleChart(Fruits, idvar="Fruit", 
+                          xvar="Sales", yvar="Expenses", colorvar = "Year",
+                          sizevar = "Profit", options = list(width = 750,
+                          height = "Automatic"))
+plot(inventory_chart3)
+```
+
+##### Bubble Chart with Aesthetics
+* options allows a list of configuration options to change aesthetic elements of the graph
+     + vAxis = "{title:'', titleTextStyle: {color: ''}}" adds a colored title to the vertical/horizontal axis
+     + colors="['#cbb69d', '#603913', '#c69c6e']" changes the color of the bubbles
+     
+```{r results='asis', tidy=FALSE, fig.height= 50, fig.width=50}
+inventory_chart4 <- gvisBubbleChart(Fruits, idvar="Fruit", 
+                          xvar="Sales", yvar="Expenses", colorvar = "Year",
+                          sizevar = "Profit", options = list(title = "Johnny's Inventory",
+                          vAxis = "{title:'Sales', titleTextStyle: {color: 'gray'}}",  
+                          hAxis="{title:'Expenses', titleTextStyle: {color: 'gray'}}", 
+                          colors="['#cbb69d', '#603913', '#c69c6e']", width = 750,
+                          height = "Automatic"))
+plot(inventory_chart4)
+```    
+____________________________________________________________________________________________________________________
+#### Data Analysis with Line Charts{.tabset}
+2. Johnny wants to see his sales from 2008-2010
+
+##### Basic Line Chart For All Fruits
+* gvisLineChart shows the change in data points over a continuous variable
+* With the following code, we can get a basic line chart of his profits across all fruits
+     + xVar is the column name of a numerical vector in data to be plotted on the x-axis
+     + interpolateNulls = FALSE means it will leave a break in the line at any unknown or NA points
+```{r results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+# First group by the year to get the sum of values for all fruits across the 3 years
+sales_grouped <- Fruits %>% group_by(Year) %>% summarise(values = sum(Sales)) 
+sales_grouped$Year <- as.character(sales_grouped$Year)
+
+# Plot the data with the x-axis being the 3 years
+sales <- gvisLineChart(sales_grouped, xvar = "Year", options = list(interpolateNulls = FALSE, width = 750,
+                          height = "Automatic"))
+
+plot(sales)
+```
+
+##### Basic Line Chart For Each Fruit
+* With the following code, we can get a basic line chart of his profits for each of the fruits across the 3 years
+     + colors="['#cbb69d', '#603913', '#c69c6e']" changes the color of the lines
+```{r ComboExample, results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+
+#Break up fruits into different dataframes
+Apples = filter(Fruits, Fruit == "Apples")
+Oranges = filter(Fruits, Fruit == "Oranges")
+Bananas = filter(Fruits, Fruit == "Bananas")
+
+#Create new dataframe with year as character and each fruit's sales as a seperate variable
+salesBy = data.frame(Year = as.character(unique(Fruits$Year)), Apples = Apples$Sales, Oranges = Oranges$Sales, Bananas = Bananas$Sales)
+
+#Create line chart
+byFruit = gvisLineChart(salesBy, xvar = "Year", options = list(colors="['#cbb69d', '#603913', '#c69c6e']", width = 750,
+                          height = "Automatic"))
+                        
+plot(byFruit)
+```
+____________________________________________________________________________________________________________________
+
+#### Data Analysis using a Pie Chart{.tabset}
+4. Johnny wants to see which fruit is more popular.
+
+##### Pie Chart with Percentages
+* gvisPieChart compares relative size of parts that make up a whole
+* With the following code, we can see a breakdown of which fruit is more popular by percentage.
+```{r results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+papaya <- Fruits %>% group_by(Fruit) %>% summarize(popularity = mean(Sales))
+piedataframe <- data.frame(fruit = papaya$Fruit, popularity = papaya$popularity)
+Pie <- gvisPieChart(piedataframe, options = list(title = "Fruits by Popularity", width = 750, height = "Automatic"))
+plot(Pie)
+```
+
+##### 3D Pie Chart with Percentages
+* We can also make the graph 3d by setting the is3D call to TRUE
+```{r results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+papaya <- Fruits %>% group_by(Fruit) %>% summarize(popularity = mean(Sales))
+piedataframe <- data.frame(fruit = papaya$Fruit, popularity = papaya$popularity)
+Pie <- gvisPieChart(piedataframe, options = list(title = "Fruits by Popularity", is3D = TRUE, width = 750, height = "Automatic"))
+plot(Pie)
+```
+
+____________________________________________________________________________________________________________________
+#### Data Analysis using a Gauge Chart{.tabset}
+5. Johnny wants to know how popular his bananas are in various Metropolitan cities.
+
+##### Making a Gauge Meter
+* gvisGauge shows a meter of values from min to max and where the datapoint falls on the scale
+* With the following code, we can get a gauge of the popularity of his bananas.
+```{r results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+papaya <- Fruits %>% group_by(Fruit) %>% summarize(popularity = mean(Sales))
+Gauge <-  gvisGauge(papaya,
+                    options=list(min=0, max=200, greenFrom=100,
+                                 greenTo=200, yellowFrom=50, yellowTo=100,
+                                 redFrom=0, redTo=50, width=600, height=400))
+          
+plot(Gauge)
+```
+____________________________________________________________________________________________________________________
+#### Data Analysis using Geographic Locations{.tabset}
+6. Johnny wants to which US states give him the most profit.
+
+##### Making a Region Map
+* gvisGeoChart is a map of a country, a continent, or a region with two modes: The region mode colorizes whole regions, such as countries, provinces, or states. The marker mode marks designated regions using bubbles that are scaled according to a value that you specify.
+* With the following code, we can see a map of the United States and the concentration of profit from each state.
+     + region is the area to display on the map
+     + displayMode is what type of map it is (region/markers/auto)
+     + resolution is the resolution of map borders
+```{r results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+require(datasets)
+
+states <- data.frame(state.name, state.x77)
+colnames(states)[4] <- "Profits"
+GeoStates <- gvisGeoChart(states, "state.name", "Profits", options=list(region="US", displayMode="regions", resolution="provinces", width=600, height=400))
+plot(GeoStates)
+
+#The dataset isn't directly for the profits per sale but is used in this context for demonstration purposes.
+```
+
+##### Zooming Into a Map
+* With the following code, we can zoom into a specific state by specifying the state in the region argument
+     + resolution = metros will show each individual section of a state (**Supported for the US country region and US state regions only**)
+      
+```{r results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+require(datasets)
+
+states <- data.frame(state.name, state.x77)
+colnames(states)[4] <- "Profits"
+GeoStates <- gvisGeoChart(states, "state.name", "Profits", options=list(region="US-VA", displayMode="regions", resolution="metros", width=600, height=400))
+
+plot(GeoStates)
+
+# However, with this gvisGeoChart will automatically take out color indications and labels
+```
+
+##### Creating a Trajectory Chart
+* With the following code, we can get a trajectory of the hurricane's path and see if it will affect any of Johnny's export locations
+```{r results='asis', tidy=FALSE, warning=FALSE, message=FALSE}
+GeoMarker <- gvisGeoChart(Andrew, "LatLong", 
+                          sizevar='Speed_kt',
+                          colorvar="Pressure_mb", 
+                          options=list(region="US", width = 750,
+                          height = "Automatic"))
+plot(GeoMarker)
+```
+____________________________________________________________________________________________________________________
+### Similar Packages
+
+#### rCharts
+* The original author is Ramnath Vaidyanathan.
+* It's intention was similar to googleVis, to create, customize and publish interactive javascript visualizations from R using a familiar lattice style plotting interface.
+* Has a lot of similar functions to googleVis:
+     + Create maps
+     + Identify specific regions on a map
+     + Provides different databases of worlds cities by providing latitude and longitude arguments
+     + Line charts to display different groups of the data
+          + It is much easier to do this with rCharts since it has additional functionality to group the data and color them accordingly
+      
+#### Shiny
+* The original authors are Winston Chang, Joe Cheng, JJ Allaire, Yihui Xie, Jonathan McPherson, RStudio, jQuery Foundation, jQuery contributors, jQuesry UI Contributors, Mark Otto, Jacob Thornton, Bootstrap constributors, Twitter, Alexander Farkas, Scott Jehl, Stefan Petre, Andrew Rowls, Dave Gandy, Brian REavis, Kristopher Michael Kowal, es5-shim contributors, Denis Ineshin, Sami Samhuri, SpryMedia Limited, John Fraser, John Gruber, Ivan Sagalaev and the R Core Team.
+* rShiny allows users to create and display several charts and graphics at once in a predetermined arrangement
+     + Similar to the googleVis' ability to put several objects near each other
+* Several GUI elements that allow users to view, filter and even edit data without leaving the rShiny window.
+     + Similar to googleVis' gvis.editor option 
+* One of the most popular libraries for R
+* googleVis is easy to embed into a Shiny application using the renderGvis() function
+____________________________________________________________________________________________________________________
+
+### Reflection
+
+#### Pros
+
+* Unique charts
+    + Plot directly onto maps
+    + Display data by region (i.e. state, country, etc)
+    + Gauge charts
+* Interactive
+* Connection to Google means that maps are always up-do-date
+* Independant package, not reliant on others to operate
+* Charts require very little code to be both functional and aesthetically pleasing
+    + An experienced user can create several attractive charts in a short time
+* Package comes with commands to make inclusion in packages like rShiny more straightforward
+
+#### Cons
+
+* Connection to google means code cannot be run offline
+* Plots generated in new tab on default web browser instead of R-Studio's 'Plots' tab
+    + Can lead to complications when attempting to display graphics using googeVis in RMarkdown, Shiny or similar formats
+    + Plots cannot be exported to an image or PDF like plotting packages such as ggplot2 that output in RStudio
+* Generates package-specific directories in order for functions to operate
+    + Not a major issue, but can complicate file sharing
+* Basic graphs (i.e. line, bubble) very similar to other graphing and plotting packages, such as rCharts, without any major unique selling point
+
+
+#### Suggestions
+
+* Add features or chart arguments that allow the charts to be more compatable with RMarkdown and GUI packages such as RMarkdown and Shiny
+* Expand data interactivity with the ability to hide/show variables by clicking them on the chart key
+
+____________________________________________________________________________________________________________________
+### Citations
+
+1. https://www.rdocumentation.org/packages/googleVis/versions/0.6.2
+2. https://developers.google.com/chart/interactive/docs/gallery
+3. http://docshare01.docshare.tips/files/28455/284556748.pdf
+4. https://cran.r-project.org/web/packages/googleVis/vignettes/googleVis_intro.html
+5. https://cran.r-project.org/web/packages/googleVis/index.html
+6. https://cran.r-project.org/web/packages/shiny/index.html
+
+
+```{r resetOptions}
+## Set options back to original options
+options(op)
+```
